@@ -96,7 +96,7 @@ Når brugeren siger ok:
 ### Merge til main
 
 Push til `claude/`-branchen sker automatisk via scriptet.
-**Merge til `main` sker via pull request i GitHub web UI** — ikke automatisk (platformbegrænsning).
+**Merge til `main` sker automatisk via GitHub Actions** — så snart push til `claude/`-branchen lykkes, merger actionen ændringerne direkte til `main` uden PR.
 
 ---
 
