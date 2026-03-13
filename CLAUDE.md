@@ -2,13 +2,20 @@
 
 ## TDD-udviklingsflow
 
-Følg **altid** dette flow for nye features og rettelser. Spring **ingen** trin over.
+Følg **altid** dette flow. Spring **ingen** trin over.
+
+Der er to spor afhængigt af commit-typen:
+
+| Type | Eksempler | Spor |
+|---|---|---|
+| `feat:` | ny UI-funktion, ny side | Kræver brugerverifikation i UI |
+| `fix:` `refactor:` `chore:` `test:` | bugfix, oprydning, infrastruktur | Automatisk efter grønne tests |
 
 ---
 
 ### Trin 1 — Planlæg
 
-- Beskriv hvad der skal laves (feature eller bugfix)
+- Beskriv hvad der skal laves
 - Identificer hvilke filer der berøres
 - Aftal med brugeren hvad "done" betyder
 
@@ -18,7 +25,7 @@ Følg **altid** dette flow for nye features og rettelser. Spring **ingen** trin 
 
 Opret eller opdater testfilen **før** implementeringen.
 
-- Test skal beskrive den ønskede adfærd, ikke implementeringen
+- Tests skal beskrive den ønskede adfærd, ikke implementeringen
 - Kør tests og bekræft at de **fejler** (red)
 - Eksempel: `npm test -- --testPathPattern=<filnavn>`
 
@@ -43,9 +50,19 @@ Commit **ikke** hvis der er fejlende tests.
 
 ---
 
-### Trin 5 — Brugerverifikation i UI (OBLIGATORISK)
+### Trin 5a — Automatisk commit (fix / refactor / chore / test)
 
-Når alle tests er grønne, send følgende besked til brugeren:
+Når alle tests er grønne, commit og push **med det samme** uden at vente på brugerbekræftelse:
+
+```bash
+.claude/hooks/commit-and-push.sh "<beskrivende commit-besked>"
+```
+
+---
+
+### Trin 5b — Brugerverifikation i UI (kun feat:)
+
+Kun for `feat:`-commits: send følgende besked til brugeren og **vent**:
 
 ```
 ✅ Alle tests er grønne.
@@ -55,35 +72,31 @@ Kan du bekræfte at det virker i brugerfladen?
 👉 Åbn: http://localhost:<PORT>/<sti-til-relevant-side>
 
 Hvad der er ændret:
-- [beskriv konkret hvad brugeren skal kigge efter, fx "ny 'Tilføj begivenhed'-knap i øverste højre hjørne"]
-- [eventuelle yderligere ændringer]
+- [beskriv konkret hvad brugeren skal kigge efter]
 
 Svar 'ok' eller beskriv eventuelle problemer, inden jeg committer.
 ```
 
-**Vent på brugerens svar. Commit ikke endnu.**
-
----
-
-### Trin 6 — Commit og push (kun efter brugerbekræftelse)
-
-Når brugeren har bekræftet at det virker i UI:
+Når brugeren siger ok:
 
 ```bash
 .claude/hooks/commit-and-push.sh "<beskrivende commit-besked>"
 ```
 
-Commit-beskeden skal:
+---
+
+### Commit-besked format
+
 - Starte med typen: `feat:`, `fix:`, `refactor:`, `test:`, `chore:`
 - Kort beskrive hvad der er lavet (under 72 tegn)
 - Eksempel: `feat: tilføj 'Ny begivenhed'-knap til kalendervisning`
 
 ---
 
-### Trin 7 — Merge til main
+### Merge til main
 
 Push til `claude/`-branchen sker automatisk via scriptet.
-**Merge til `main` sker via pull request i Gitea web UI** — ikke automatisk.
+**Merge til `main` sker via pull request i Gitea web UI** — ikke automatisk (platformbegrænsning).
 
 ---
 
@@ -93,7 +106,8 @@ Push til `claude/`-branchen sker automatisk via scriptet.
 |---|---|
 | Tests først | Skriv altid tests inden implementering |
 | Grønne tests | Commit kun når alle tests består |
-| Brugerverifikation | Vent altid på brugerens ok fra UI |
+| feat: kræver UI-ok | Vent på brugerens bekræftelse før commit af nye features |
+| fix/chore/refactor: auto | Commit automatisk når tests er grønne |
 | Én ting ad gangen | Commit én logisk enhed — ikke flere features i én commit |
 | Ingen halvfærdige commits | Commit ikke midtvejs i en feature |
 
