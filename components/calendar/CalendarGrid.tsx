@@ -2,11 +2,13 @@
 
 import { useState } from 'react'
 import { getHolidayMap, formatDateKey, type Holiday } from '@/lib/holidays/danish'
+import { CalendarColors, DEFAULT_CALENDAR_COLORS } from './calendarColors'
 
 interface CalendarGridProps {
   initialYear?: number
   initialMonth?: number
   today?: Date
+  colors?: CalendarColors
 }
 
 const WEEKDAYS = ['Man', 'Tir', 'Ons', 'Tor', 'Fre', 'Lør', 'Søn']
@@ -104,6 +106,7 @@ export default function CalendarGrid({
   initialYear,
   initialMonth,
   today = new Date(),
+  colors = DEFAULT_CALENDAR_COLORS,
 }: CalendarGridProps) {
   const [year, setYear] = useState(initialYear ?? today.getFullYear())
   const [month, setMonth] = useState(initialMonth ?? today.getMonth() + 1)
@@ -186,11 +189,11 @@ export default function CalendarGrid({
               {WEEKDAYS.map((day) => (
                 <th
                   key={day}
-                  className={`px-2 py-2 text-xs font-medium text-center ${
-                    day === 'Lør' || day === 'Søn'
-                      ? 'text-red-400'
-                      : 'text-gray-500'
-                  }`}
+                  className="px-2 py-2 text-xs font-medium text-center"
+                  style={{
+                    color: colors.headerText,
+                    backgroundColor: colors.headerBackground,
+                  }}
                 >
                   {day}
                 </th>
@@ -220,7 +223,11 @@ export default function CalendarGrid({
                         title={holiday?.name}
                         className={`px-1 py-1 text-center align-top min-h-[60px] cursor-default ${
                           !day.isCurrentMonth ? 'opacity-30' : ''
-                        } ${isRed ? 'text-red-500' : 'text-gray-800'}`}
+                        }`}
+                        style={{
+                          color: colors.dateText,
+                          backgroundColor: colors.cellBackground,
+                        }}
                       >
                         <div
                           className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm ${
@@ -232,7 +239,10 @@ export default function CalendarGrid({
                           {day.day}
                         </div>
                         {holiday && day.isCurrentMonth && (
-                          <div className="text-[9px] leading-tight mt-0.5 text-red-400 truncate px-0.5">
+                          <div
+                            className="text-[9px] leading-tight mt-0.5 truncate px-0.5"
+                            style={{ color: colors.eventText }}
+                          >
                             {holiday.name}
                           </div>
                         )}
