@@ -9,6 +9,7 @@ import { CalendarColumn, DEFAULT_COLUMN_COLORS } from '@/lib/events/columns'
 import { getColumns, saveColumn, deleteColumn } from '@/lib/events/columnStorage'
 import { expandRecurringEvents } from '@/lib/events/recurrence'
 import { RecurrenceType } from '@/lib/events/types'
+import { parseEventText } from '@/lib/events/textImport'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -55,6 +56,8 @@ export default function Home() {
   const [showYear, setShowYear] = useState(false)
   const [columns, setColumns] = useState<CalendarColumn[]>([])
   const [newColName, setNewColName] = useState('')
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
   const [form, setForm] = useState<EventFormState | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
@@ -118,6 +121,14 @@ export default function Home() {
   function handleDeleteColumn(id: string) {
     deleteColumn(id)
     setColumns(getColumns())
+  }
+
+  function handleImport() {
+    const parsed = parseEventText(importText)
+    parsed.forEach((e) => saveEvent(e))
+    setEvents(getEvents())
+    setImportText('')
+    setShowImport(false)
   }
 
   async function handleExport() {
@@ -227,6 +238,12 @@ export default function Home() {
               className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
             >
               + Ny begivenhed
+            </button>
+            <button
+              onClick={() => setShowImport(true)}
+              className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+            >
+              Importer tekst
             </button>
             <button
               onClick={handleExport}
@@ -419,6 +436,43 @@ export default function Home() {
                 className="px-4 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40"
               >
                 Gem
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-96">
+            <h2 className="font-semibold text-gray-800 mb-1">Importer begivenheder</h2>
+            <p className="text-xs text-gray-500 mb-3">
+              Ét event per linje:<br />
+              <code className="bg-gray-100 px-1 rounded">ÅÅÅÅ-MM-DD Titel [farve] [gentagelse]</code><br />
+              Farver: gul, grøn, blå, lilla, rød, pink, grå<br />
+              Gentagelse: ugentlig, månedlig, årlig
+            </p>
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder={'2025-08-11 Første skoledag gul\n2025-12-24 Juleaften rød\n2025-06-15 Mors fødselsdag [1975] lilla årlig'}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm font-mono h-40 resize-none"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => { setShowImport(false); setImportText('') }}
+                className="px-4 py-1.5 rounded border border-gray-300 text-sm hover:bg-gray-50"
+              >
+                Annuller
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!importText.trim()}
+                className="px-4 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40"
+              >
+                Importer
               </button>
             </div>
           </div>
