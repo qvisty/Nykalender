@@ -5,6 +5,8 @@ import YearView from '@/components/calendar/YearView'
 import CalendarHeader, { HeaderAlign } from '@/components/calendar/CalendarHeader'
 import { CalendarEvent, EventColor, EVENT_COLORS } from '@/lib/events/types'
 import { getEvents, saveEvent, deleteEvent } from '@/lib/events/storage'
+import { CalendarColumn, DEFAULT_COLUMN_COLORS } from '@/lib/events/columns'
+import { getColumns, saveColumn, deleteColumn } from '@/lib/events/columnStorage'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -36,6 +38,7 @@ interface EventFormState {
   date: string
   title: string
   color: EventColor
+  columnId?: string
 }
 
 export default function Home() {
@@ -47,12 +50,15 @@ export default function Home() {
   const [calTitle, setCalTitle] = useState('')
   const [calTitleAlign, setCalTitleAlign] = useState<HeaderAlign>('center')
   const [showYear, setShowYear] = useState(false)
+  const [columns, setColumns] = useState<CalendarColumn[]>([])
+  const [newColName, setNewColName] = useState('')
   const [form, setForm] = useState<EventFormState | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setEvents(getEvents())
+    setColumns(getColumns())
   }, [])
 
   function openNewEvent(date?: string) {
@@ -81,6 +87,7 @@ export default function Home() {
       date: form.date,
       title: form.title.trim(),
       color: form.color,
+      columnId: form.columnId || undefined,
     }
     saveEvent(event)
     setEvents(getEvents())
@@ -90,6 +97,23 @@ export default function Home() {
   function handleDelete(id: string) {
     deleteEvent(id)
     setEvents(getEvents())
+  }
+
+  function handleAddColumn() {
+    if (!newColName.trim()) return
+    const col: CalendarColumn = {
+      id: nanoid(),
+      name: newColName.trim(),
+      color: DEFAULT_COLUMN_COLORS[columns.length % DEFAULT_COLUMN_COLORS.length],
+    }
+    saveColumn(col)
+    setColumns(getColumns())
+    setNewColName('')
+  }
+
+  function handleDeleteColumn(id: string) {
+    deleteColumn(id)
+    setColumns(getColumns())
   }
 
   async function handleExport() {
@@ -218,11 +242,44 @@ export default function Home() {
             monthCount={monthCount}
             today={today}
             events={events}
+            columns={columns}
           />
         </div>
 
         {/* Event list sidebar */}
-        <aside className="w-60 shrink-0">
+        <aside className="w-60 shrink-0 space-y-3">
+          {/* Kolonner */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
+            <h2 className="font-semibold text-gray-700 text-sm mb-2">Kolonner</h2>
+            <ul className="space-y-1 mb-2">
+              {columns.map((col) => (
+                <li key={col.id} className="flex items-center gap-1.5 text-xs rounded px-2 py-1 group" style={{ backgroundColor: col.color }}>
+                  <span className="flex-1 font-medium text-gray-700">{col.name}</span>
+                  <button
+                    onClick={() => handleDeleteColumn(col.id)}
+                    className="hidden group-hover:inline text-gray-500 hover:text-red-600"
+                    title="Slet kolonne"
+                  >✕</button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={newColName}
+                onChange={(e) => setNewColName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddColumn()}
+                placeholder="Ny kolonne..."
+                className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs"
+              />
+              <button
+                onClick={handleAddColumn}
+                disabled={!newColName.trim()}
+                className="px-2 py-1 rounded bg-blue-600 text-white text-xs hover:bg-blue-700 disabled:opacity-40"
+              >+</button>
+            </div>
+          </div>
+
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3">
             <h2 className="font-semibold text-gray-700 text-sm mb-2">Begivenheder</h2>
             {events.length === 0 && (
@@ -259,6 +316,7 @@ export default function Home() {
                 ))}
             </ul>
           </div>
+          </div>
         </aside>
       </div>
 
@@ -291,6 +349,21 @@ export default function Home() {
                   onKeyDown={(e) => e.key === 'Enter' && handleSave()}
                 />
               </div>
+              {columns.length > 0 && (
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">Kolonne</label>
+                  <select
+                    value={form.columnId ?? ''}
+                    onChange={(e) => setForm({ ...form, columnId: e.target.value || undefined })}
+                    className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+                  >
+                    <option value="">— Ingen kolonne —</option>
+                    {columns.map((col) => (
+                      <option key={col.id} value={col.id}>{col.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Farve</label>
                 <div className="flex gap-1 flex-wrap">

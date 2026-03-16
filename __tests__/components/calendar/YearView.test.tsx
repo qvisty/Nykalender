@@ -2,6 +2,7 @@ import React from 'react'
 import { render, screen } from '@testing-library/react'
 import YearView from '@/components/calendar/YearView'
 import { CalendarEvent } from '@/lib/events/types'
+import { CalendarColumn } from '@/lib/events/columns'
 
 const DANISH_MONTHS = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun',
@@ -126,5 +127,58 @@ describe('YearView – helligdage', () => {
   it('viser helligdagsnavn for nytårsdag', () => {
     render(<YearView startYear={2025} startMonth={1} today={new Date('2025-03-15')} />)
     expect(screen.getByText('Nytårsdag')).toBeInTheDocument()
+  })
+})
+
+describe('YearView – kolonner', () => {
+  const columns: CalendarColumn[] = [
+    { id: 'col-1', name: 'Mor', color: '#fef08a' },
+    { id: 'col-2', name: 'Far', color: '#bbf7d0' },
+  ]
+
+  it('viser kolonnenavne som underoverskrifter', () => {
+    render(
+      <YearView startYear={2025} startMonth={1} today={new Date('2025-03-15')} columns={columns} />
+    )
+    // Each month header area should show the column names
+    const morLabels = screen.getAllByText('Mor')
+    const farLabels = screen.getAllByText('Far')
+    expect(morLabels.length).toBeGreaterThan(0)
+    expect(farLabels.length).toBeGreaterThan(0)
+  })
+
+  it('viser begivenhed i korrekt kolonne', () => {
+    const events: CalendarEvent[] = [
+      { id: 'e1', date: '2025-03-10', title: 'Tandlæge', color: 'blue', columnId: 'col-1' },
+    ]
+    render(
+      <YearView
+        startYear={2025}
+        startMonth={1}
+        today={new Date('2025-03-15')}
+        columns={columns}
+        events={events}
+      />
+    )
+    const cell = screen.getByTestId('day-col-2025-03-10-col-1')
+    expect(cell).toHaveTextContent('Tandlæge')
+  })
+
+  it('tom kolonne-celle har ingen begivenhed', () => {
+    const events: CalendarEvent[] = [
+      { id: 'e1', date: '2025-03-10', title: 'Tandlæge', color: 'blue', columnId: 'col-1' },
+    ]
+    render(
+      <YearView
+        startYear={2025}
+        startMonth={1}
+        today={new Date('2025-03-15')}
+        columns={columns}
+        events={events}
+      />
+    )
+    // col-2 has no event on this date
+    const cell = screen.getByTestId('day-col-2025-03-10-col-2')
+    expect(cell).not.toHaveTextContent('Tandlæge')
   })
 })
