@@ -3,6 +3,7 @@
 import { getHolidayMap, formatDateKey } from '@/lib/holidays/danish'
 import { CalendarEvent, EventColor } from '@/lib/events/types'
 import { CalendarColumn } from '@/lib/events/columns'
+import { formatAgeInTitle } from '@/lib/events/recurrence'
 
 const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Maj', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec']
 
@@ -184,7 +185,8 @@ export default function YearView({
                       const colEvent = dayEvents.find((e) => e.columnId === col.id)
                       const isFirstCol = colIdx === 0
                       // Show holiday label in first column when no column event
-                      const label = colEvent?.title ?? (isFirstCol ? holiday?.name : undefined)
+                      const rawTitle = colEvent ? formatAgeInTitle(colEvent.title, dateKey) : undefined
+                      const label = rawTitle ?? (isFirstCol ? holiday?.name : undefined)
                       return (
                         <td
                           key={`${year}-${month}-${col.id}`}
@@ -245,7 +247,9 @@ export default function YearView({
 
                   // No-column mode (original behavior)
                   const firstEvent = dayEvents.find((e) => !e.columnId) ?? dayEvents[0]
-                  const label = firstEvent?.title ?? holiday?.name
+                  const label = firstEvent
+                    ? formatAgeInTitle(firstEvent.title, dateKey)
+                    : holiday?.name
 
                   return (
                     <td

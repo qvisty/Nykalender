@@ -7,6 +7,8 @@ import { CalendarEvent, EventColor, EVENT_COLORS } from '@/lib/events/types'
 import { getEvents, saveEvent, deleteEvent } from '@/lib/events/storage'
 import { CalendarColumn, DEFAULT_COLUMN_COLORS } from '@/lib/events/columns'
 import { getColumns, saveColumn, deleteColumn } from '@/lib/events/columnStorage'
+import { expandRecurringEvents } from '@/lib/events/recurrence'
+import { RecurrenceType } from '@/lib/events/types'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -39,6 +41,7 @@ interface EventFormState {
   title: string
   color: EventColor
   columnId?: string
+  recurrence?: RecurrenceType
 }
 
 export default function Home() {
@@ -88,6 +91,7 @@ export default function Home() {
       title: form.title.trim(),
       color: form.color,
       columnId: form.columnId || undefined,
+      recurrence: form.recurrence || undefined,
     }
     saveEvent(event)
     setEvents(getEvents())
@@ -129,6 +133,13 @@ export default function Home() {
 
   const endMonth = ((startMonth - 2 + 11) % 12) + 1
   const endYear = startYear + (startMonth === 1 ? 0 : 1)
+
+  // Expand recurring events over the visible period
+  const lastMonthIdx = (startMonth - 1 + monthCount - 1) % 12
+  const lastYear = startYear + Math.floor((startMonth - 1 + monthCount - 1) / 12)
+  const rangeStart = `${startYear}-${String(startMonth).padStart(2, '0')}-01`
+  const rangeEnd = `${lastYear}-${String(lastMonthIdx + 1).padStart(2, '0')}-31`
+  const expandedEvents = expandRecurringEvents(events, rangeStart, rangeEnd)
   const periodLabel =
     startMonth === 1
       ? `${startYear}`
@@ -241,7 +252,7 @@ export default function Home() {
             startMonth={startMonth}
             monthCount={monthCount}
             today={today}
-            events={events}
+            events={expandedEvents}
             columns={columns}
           />
         </div>
@@ -364,6 +375,20 @@ export default function Home() {
                   </select>
                 </div>
               )}
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Gentagelse</label>
+                <select
+                  value={form.recurrence ?? ''}
+                  onChange={(e) => setForm({ ...form, recurrence: (e.target.value as RecurrenceType) || undefined })}
+                  className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+                >
+                  <option value="">— Ingen gentagelse —</option>
+                  <option value="weekly">Ugentlig</option>
+                  <option value="monthly">Månedlig</option>
+                  <option value="yearly">Årlig</option>
+                </select>
+                <p className="text-[10px] text-gray-400 mt-0.5">Tip: skriv [årstal] i titlen for at vise alder, f.eks. "Fødselsdag [1990]"</p>
+              </div>
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Farve</label>
                 <div className="flex gap-1 flex-wrap">
