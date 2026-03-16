@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'react'
 import YearView from '@/components/calendar/YearView'
+import CalendarHeader, { HeaderAlign } from '@/components/calendar/CalendarHeader'
 import { CalendarEvent, EventColor, EVENT_COLORS } from '@/lib/events/types'
 import { getEvents, saveEvent, deleteEvent } from '@/lib/events/storage'
 import { nanoid } from 'nanoid'
@@ -43,6 +44,9 @@ export default function Home() {
   const [startMonth, setStartMonth] = useState(1)
   const [startYear, setStartYear] = useState(today.getFullYear())
   const [monthCount, setMonthCount] = useState<1 | 3 | 6 | 12>(12)
+  const [calTitle, setCalTitle] = useState('')
+  const [calTitleAlign, setCalTitleAlign] = useState<HeaderAlign>('center')
+  const [showYear, setShowYear] = useState(false)
   const [form, setForm] = useState<EventFormState | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
@@ -151,6 +155,36 @@ export default function Home() {
             <span className="text-gray-500 text-sm">{periodLabel}</span>
           </div>
 
+          {/* Titel-indstillinger */}
+          <div className="flex items-center gap-2 flex-wrap text-sm">
+            <input
+              type="text"
+              value={calTitle}
+              onChange={(e) => setCalTitle(e.target.value)}
+              placeholder="Kalendertitel (valgfri)"
+              className="border border-gray-300 rounded px-2 py-1 text-sm w-44"
+            />
+            <select
+              value={calTitleAlign}
+              onChange={(e) => setCalTitleAlign(e.target.value as HeaderAlign)}
+              className="border border-gray-300 rounded px-2 py-1 text-sm"
+              disabled={!calTitle}
+            >
+              <option value="left">Venstre</option>
+              <option value="center">Centreret</option>
+              <option value="right">Højre</option>
+            </select>
+            <label className="flex items-center gap-1 text-gray-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showYear}
+                onChange={(e) => setShowYear(e.target.checked)}
+                disabled={!calTitle}
+              />
+              Vis år
+            </label>
+          </div>
+
           {/* Actions */}
           <div className="flex items-center gap-2">
             <button
@@ -172,6 +206,12 @@ export default function Home() {
       <div className="max-w-screen-2xl mx-auto px-4 py-4 flex gap-4 items-start">
         {/* Calendar */}
         <div ref={calendarRef} className="flex-1 min-w-0 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden p-2">
+          <CalendarHeader
+            title={calTitle}
+            year={startYear}
+            showYear={showYear}
+            align={calTitleAlign}
+          />
           <YearView
             startYear={startYear}
             startMonth={startMonth}
