@@ -12,17 +12,11 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout main
+      - name: Checkout claude-branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
-      - name: Merge claude-branch til main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git merge --ff-only origin/${{ github.ref_name }}
-
       - name: Push til main
-        run: git push origin main
+        run: git push origin HEAD:refs/heads/main
