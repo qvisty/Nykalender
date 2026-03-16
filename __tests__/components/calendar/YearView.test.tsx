@@ -16,6 +16,30 @@ describe('YearView – månedsoverskrifter', () => {
     })
   })
 
+  it('viser kun 3 overskrifter når monthCount=3', () => {
+    render(<YearView startYear={2025} startMonth={1} monthCount={3} today={new Date('2025-03-15')} />)
+    const headers = screen.getAllByRole('columnheader')
+    expect(headers).toHaveLength(3)
+    expect(headers[0]).toHaveTextContent('Jan')
+    expect(headers[1]).toHaveTextContent('Feb')
+    expect(headers[2]).toHaveTextContent('Mar')
+  })
+
+  it('viser kun 6 overskrifter når monthCount=6', () => {
+    render(<YearView startYear={2025} startMonth={7} monthCount={6} today={new Date('2025-08-01')} />)
+    const headers = screen.getAllByRole('columnheader')
+    expect(headers).toHaveLength(6)
+    expect(headers[0]).toHaveTextContent('Jul')
+    expect(headers[5]).toHaveTextContent('Dec')
+  })
+
+  it('viser kun 1 overskrift når monthCount=1', () => {
+    render(<YearView startYear={2025} startMonth={5} monthCount={1} today={new Date('2025-05-10')} />)
+    const headers = screen.getAllByRole('columnheader')
+    expect(headers).toHaveLength(1)
+    expect(headers[0]).toHaveTextContent('Maj')
+  })
+
   it('starter med August når startMonth=8 (skoleår)', () => {
     render(<YearView startYear={2025} startMonth={8} today={new Date('2025-09-01')} />)
     const headers = screen.getAllByRole('columnheader')

@@ -42,6 +42,7 @@ export default function Home() {
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [startMonth, setStartMonth] = useState(1)
   const [startYear, setStartYear] = useState(today.getFullYear())
+  const [monthCount, setMonthCount] = useState<1 | 3 | 6 | 12>(12)
   const [form, setForm] = useState<EventFormState | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
@@ -134,6 +135,19 @@ export default function Home() {
                 className="border border-gray-300 rounded px-2 py-1 text-sm w-20"
               />
             </div>
+            <div className="flex items-center gap-2 text-sm">
+              <label className="text-gray-600 font-medium">Måneder:</label>
+              <select
+                value={monthCount}
+                onChange={(e) => setMonthCount(Number(e.target.value) as 1 | 3 | 6 | 12)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value={1}>1</option>
+                <option value={3}>3</option>
+                <option value={6}>6</option>
+                <option value={12}>12</option>
+              </select>
+            </div>
             <span className="text-gray-500 text-sm">{periodLabel}</span>
           </div>
 
@@ -161,6 +175,7 @@ export default function Home() {
           <YearView
             startYear={startYear}
             startMonth={startMonth}
+            monthCount={monthCount}
             today={today}
             events={events}
           />

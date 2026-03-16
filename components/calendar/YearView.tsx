@@ -37,6 +37,7 @@ function formatKey(year: number, month: number, day: number): string {
 interface YearViewProps {
   startYear: number
   startMonth: number  // 1–12
+  monthCount?: number  // 1, 3, 6 or 12 (default 12)
   today?: Date
   events?: CalendarEvent[]
 }
@@ -44,12 +45,13 @@ interface YearViewProps {
 export default function YearView({
   startYear,
   startMonth,
+  monthCount = 12,
   today = new Date(),
   events = [],
 }: YearViewProps) {
-  // Build the 12-month sequence
+  // Build the month sequence
   const months: { year: number; month: number }[] = []
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < monthCount; i++) {
     const m = ((startMonth - 1 + i) % 12) + 1
     const y = startYear + Math.floor((startMonth - 1 + i) / 12)
     months.push({ year: y, month: m })
