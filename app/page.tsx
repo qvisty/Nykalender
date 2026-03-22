@@ -15,6 +15,7 @@ import { serializeCalendarState, deserializeCalendarState } from '@/lib/calendar
 import { saveCalendar, fetchSharedCalendar, fetchCalendar } from '@/lib/calendars/api'
 import { createClient } from '@/lib/supabase/client'
 import AuthIndicator from '@/components/AuthIndicator'
+import { buildEditForm, EventFormState } from '@/lib/events/editForm'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -42,13 +43,6 @@ const MONTH_NAMES = [
   'Juli', 'August', 'September', 'Oktober', 'November', 'December',
 ]
 
-interface EventFormState {
-  date: string
-  title: string
-  color: EventColor
-  columnId?: string
-  recurrence?: RecurrenceType
-}
 
 export default function Home() {
   return (
@@ -123,7 +117,7 @@ function HomeInner() {
 
   function openEditEvent(event: CalendarEvent) {
     setEditId(event.id)
-    setForm({ date: event.date, title: event.title, color: event.color })
+    setForm(buildEditForm(event))
   }
 
   function closeForm() {
