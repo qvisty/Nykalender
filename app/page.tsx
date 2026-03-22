@@ -13,6 +13,8 @@ import { RecurrenceType } from '@/lib/events/types'
 import { parseEventText } from '@/lib/events/textImport'
 import { serializeCalendarState, deserializeCalendarState } from '@/lib/calendars/snapshot'
 import { saveCalendar, fetchSharedCalendar, fetchCalendar } from '@/lib/calendars/api'
+import { createClient } from '@/lib/supabase/client'
+import AuthIndicator from '@/components/AuthIndicator'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -74,9 +76,16 @@ function HomeInner() {
   const [saveName, setSaveName] = useState('')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [isSharedView, setIsSharedView] = useState(false)
+  const [authUser, setAuthUser] = useState<{ email: string } | null>(null)
   const [form, setForm] = useState<EventFormState | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data }) => {
+      setAuthUser(data.user?.email ? { email: data.user.email } : null)
+    })
+  }, [])
 
   useEffect(() => {
     const shareToken = searchParams.get('share')
@@ -165,6 +174,11 @@ function HomeInner() {
     setEvents(getEvents())
     setImportText('')
     setShowImport(false)
+  }
+
+  async function handleLogout() {
+    await createClient().auth.signOut()
+    setAuthUser(null)
   }
 
   async function handleSaveCalendar() {
@@ -320,12 +334,6 @@ function HomeInner() {
                 >
                   Gem kalender
                 </button>
-                <a
-                  href="/arkiv"
-                  className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-                >
-                  Arkiv
-                </a>
               </>
             )}
             {isSharedView && (
@@ -333,6 +341,7 @@ function HomeInner() {
                 Delt kalender (skrivebeskyttet)
               </span>
             )}
+            <AuthIndicator user={authUser} onLogout={handleLogout} />
             <button
               onClick={handleExport}
               className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
