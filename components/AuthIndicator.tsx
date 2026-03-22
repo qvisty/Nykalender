@@ -25,9 +25,13 @@ export default function AuthIndicator({ user, onLogout }: AuthIndicatorProps) {
       >
         Arkiv
       </Link>
-      <span className="text-xs text-gray-500 hidden sm:inline truncate max-w-[12rem]">
+      <Link
+        href="/profil"
+        className="text-xs text-gray-500 hidden sm:inline truncate max-w-[12rem] hover:underline"
+        title="Min profil"
+      >
         {user.email}
-      </span>
+      </Link>
       <button
         onClick={onLogout}
         className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
