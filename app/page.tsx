@@ -16,6 +16,7 @@ import { saveCalendar, fetchSharedCalendar, fetchCalendar } from '@/lib/calendar
 import { createClient } from '@/lib/supabase/client'
 import AuthIndicator from '@/components/AuthIndicator'
 import { buildEditForm, EventFormState } from '@/lib/events/editForm'
+import { buildPdfFilename } from '@/lib/pdf/export'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -210,11 +211,19 @@ function HomeInner() {
     if (!calendarRef.current) return
     const html2canvas = (await import('html2canvas')).default
     const jsPDF = (await import('jspdf')).default
-    const canvas = await html2canvas(calendarRef.current, { scale: 2 })
+    const el = calendarRef.current
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      scrollX: 0,
+      scrollY: 0,
+      width: el.scrollWidth,
+      height: el.scrollHeight,
+      windowWidth: el.scrollWidth,
+    })
     const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width / 2, canvas.height / 2] })
     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2)
-    pdf.save('kalender.pdf')
+    pdf.save(buildPdfFilename(calTitle, startYear, startMonth, monthCount))
   }
 
   const endMonth = ((startMonth - 2 + 11) % 12) + 1
