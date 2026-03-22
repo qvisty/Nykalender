@@ -12,7 +12,7 @@ import { expandRecurringEvents } from '@/lib/events/recurrence'
 import { RecurrenceType } from '@/lib/events/types'
 import { parseEventText } from '@/lib/events/textImport'
 import { serializeCalendarState, deserializeCalendarState } from '@/lib/calendars/snapshot'
-import { saveCalendar, fetchSharedCalendar } from '@/lib/calendars/api'
+import { saveCalendar, fetchSharedCalendar, fetchCalendar } from '@/lib/calendars/api'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -80,14 +80,23 @@ function HomeInner() {
 
   useEffect(() => {
     const shareToken = searchParams.get('share')
+    const loadId = searchParams.get('load')
+
     if (shareToken) {
       fetchSharedCalendar(shareToken).then((result) => {
         if (result) {
-          const deserialized = deserializeCalendarState(result.data)
-          applySnapshot(deserialized)
+          applySnapshot(deserializeCalendarState(result.data))
           setIsSharedView(true)
         }
       })
+    } else if (loadId) {
+      fetchCalendar(loadId).then((result) => {
+        if (result) {
+          applySnapshot(deserializeCalendarState(result.data))
+        }
+      })
+      setEvents(getEvents())
+      setColumns(getColumns())
     } else {
       setEvents(getEvents())
       setColumns(getColumns())

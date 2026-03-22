@@ -62,6 +62,16 @@ export async function revokeShareToken(id: string): Promise<void> {
   if (!res.ok) throw new Error('Kunne ikke fjerne delingslink')
 }
 
+export async function fetchCalendar(id: string): Promise<{
+  id: string
+  name: string
+  data: CalendarSnapshot
+} | null> {
+  const res = await fetch(`/api/calendars/${id}`)
+  if (!res.ok) return null
+  return res.json()
+}
+
 export async function fetchSharedCalendar(token: string): Promise<{
   id: string
   name: string
