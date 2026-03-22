@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import YearView from '@/components/calendar/YearView'
 import CalendarHeader, { HeaderAlign } from '@/components/calendar/CalendarHeader'
 import { CalendarEvent, EventColor, EVENT_COLORS } from '@/lib/events/types'
@@ -10,6 +11,8 @@ import { getColumns, saveColumn, deleteColumn } from '@/lib/events/columnStorage
 import { expandRecurringEvents } from '@/lib/events/recurrence'
 import { RecurrenceType } from '@/lib/events/types'
 import { parseEventText } from '@/lib/events/textImport'
+import { serializeCalendarState, deserializeCalendarState } from '@/lib/calendars/snapshot'
+import { saveCalendar, fetchSharedCalendar } from '@/lib/calendars/api'
 import { nanoid } from 'nanoid'
 
 const COLOR_LABELS: Record<EventColor, string> = {
@@ -46,6 +49,15 @@ interface EventFormState {
 }
 
 export default function Home() {
+  return (
+    <Suspense>
+      <HomeInner />
+    </Suspense>
+  )
+}
+
+function HomeInner() {
+  const searchParams = useSearchParams()
   const today = new Date()
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [startMonth, setStartMonth] = useState(1)
@@ -58,14 +70,29 @@ export default function Home() {
   const [newColName, setNewColName] = useState('')
   const [showImport, setShowImport] = useState(false)
   const [importText, setImportText] = useState('')
+  const [showSave, setShowSave] = useState(false)
+  const [saveName, setSaveName] = useState('')
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [isSharedView, setIsSharedView] = useState(false)
   const [form, setForm] = useState<EventFormState | null>(null)
   const [editId, setEditId] = useState<string | null>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setEvents(getEvents())
-    setColumns(getColumns())
-  }, [])
+    const shareToken = searchParams.get('share')
+    if (shareToken) {
+      fetchSharedCalendar(shareToken).then((result) => {
+        if (result) {
+          const deserialized = deserializeCalendarState(result.data)
+          applySnapshot(deserialized)
+          setIsSharedView(true)
+        }
+      })
+    } else {
+      setEvents(getEvents())
+      setColumns(getColumns())
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function openNewEvent(date?: string) {
     setEditId(null)
@@ -129,6 +156,37 @@ export default function Home() {
     setEvents(getEvents())
     setImportText('')
     setShowImport(false)
+  }
+
+  async function handleSaveCalendar() {
+    if (!saveName.trim()) return
+    setSaveStatus('saving')
+    try {
+      const snap = serializeCalendarState({
+        events,
+        columns,
+        settings: { startYear, startMonth, monthCount, calTitle, calTitleAlign, showYear },
+      })
+      await saveCalendar(saveName.trim(), snap)
+      setSaveStatus('saved')
+      setTimeout(() => { setShowSave(false); setSaveStatus('idle'); setSaveName('') }, 1200)
+    } catch {
+      setSaveStatus('error')
+    }
+  }
+
+  function applySnapshot(data: ReturnType<typeof deserializeCalendarState>) {
+    data.events.forEach((e) => saveEvent(e))
+    data.columns.forEach((c) => saveColumn(c))
+    setEvents(getEvents())
+    setColumns(getColumns())
+    const s = data.settings
+    setStartYear(s.startYear)
+    setStartMonth(s.startMonth)
+    setMonthCount(s.monthCount)
+    setCalTitle(s.calTitle)
+    setCalTitleAlign(s.calTitleAlign)
+    setShowYear(s.showYear)
   }
 
   async function handleExport() {
@@ -233,18 +291,39 @@ export default function Home() {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => openNewEvent()}
-              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
-            >
-              + Ny begivenhed
-            </button>
-            <button
-              onClick={() => setShowImport(true)}
-              className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
-            >
-              Importer tekst
-            </button>
+            {!isSharedView && (
+              <>
+                <button
+                  onClick={() => openNewEvent()}
+                  className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+                >
+                  + Ny begivenhed
+                </button>
+                <button
+                  onClick={() => setShowImport(true)}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Importer tekst
+                </button>
+                <button
+                  onClick={() => setShowSave(true)}
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Gem kalender
+                </button>
+                <a
+                  href="/arkiv"
+                  className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
+                >
+                  Arkiv
+                </a>
+              </>
+            )}
+            {isSharedView && (
+              <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                Delt kalender (skrivebeskyttet)
+              </span>
+            )}
             <button
               onClick={handleExport}
               className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50 transition-colors"
@@ -478,6 +557,46 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Gem kalender modal */}
+      {showSave && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-80">
+            <h2 className="font-semibold text-gray-800 mb-3">Gem kalender</h2>
+            <input
+              type="text"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSaveCalendar()}
+              placeholder="Navn, fx 'Familie 2025/26'"
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm mb-4"
+              autoFocus
+            />
+            {saveStatus === 'error' && (
+              <p className="text-red-600 text-xs mb-2">Gem mislykkedes — er du logget ind?</p>
+            )}
+            {saveStatus === 'saved' && (
+              <p className="text-green-600 text-xs mb-2">Gemt!</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => { setShowSave(false); setSaveStatus('idle'); setSaveName('') }}
+                className="px-4 py-1.5 rounded border border-gray-300 text-sm hover:bg-gray-50"
+              >
+                Annuller
+              </button>
+              <button
+                onClick={handleSaveCalendar}
+                disabled={!saveName.trim() || saveStatus === 'saving'}
+                className="px-4 py-1.5 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-40"
+              >
+                {saveStatus === 'saving' ? 'Gemmer…' : 'Gem'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
+
